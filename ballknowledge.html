@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b7a3d">
+<title>ballknowledge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4efe3;--ink:#14161a;--mute:#5b625e;--line:#d8d1bf;--card:#fffdf7;
+  --green:#1b7a3d;--green-d:#0d4a24;--gold:#ffc20e;--red:#e4572e;
+  --pitch:#e4ecdc;--g1:#cfe3c0;--g2:#bcd8ad;
+  --display:"Anton","Impact",Arial Narrow,sans-serif;
+  --body:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1a13;--ink:#f1f3ee;--mute:#9bb0a2;--line:#27402f;--card:#122119;
+  --green:#3ccf74;--green-d:#0b5a2b;--red:#ff6b4a;--pitch:#11231a;--g1:#143222;--g2:#10281b;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1a13;--ink:#f1f3ee;--mute:#9bb0a2;--line:#27402f;--card:#122119;
+  --green:#3ccf74;--green-d:#0b5a2b;--red:#ff6b4a;--pitch:#11231a;--g1:#143222;--g2:#10281b;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;min-height:100vh;overflow-x:hidden}
+/* pitch stripes behind the top of the page */
+body::before{content:"";position:fixed;inset:0 0 auto 0;height:380px;pointer-events:none;z-index:-1;
+  background:repeating-linear-gradient(90deg,var(--g1) 0 64px,var(--g2) 64px 128px);
+  -webkit-mask:linear-gradient(#000 35%,transparent);mask:linear-gradient(#000 35%,transparent);opacity:.9}
+[hidden]{display:none!important}
+.wrap{max-width:560px;margin:0 auto;padding:18px 20px 72px;text-align:center}
+
+/* top bar */
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:6px}
+.logo{font-family:var(--display);font-size:26px;letter-spacing:.02em;text-transform:uppercase;color:inherit;text-decoration:none;line-height:1}
+.logo span{background:var(--gold);color:var(--ink);padding:1px 6px;border-radius:4px;transform:rotate(-2deg);display:inline-block;margin-left:2px}
+.top-r{display:flex;align-items:center;gap:10px}
+.day{color:var(--mute);font-size:13px;font-weight:500;text-align:right}
+.pill{font:inherit;font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;background:transparent;color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+
+h1{font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:clamp(42px,12vw,68px);line-height:.95;letter-spacing:.005em;margin:14px auto 14px;text-wrap:balance}
+h1 mark{background:none;color:var(--green);position:relative;white-space:nowrap}
+h1 mark::after{content:"";position:absolute;left:-4%;right:-4%;bottom:.04em;height:.22em;background:var(--gold);z-index:-1;transform:skew(-8deg);border-radius:2px}
+h1 mark{z-index:0}
+#game h1{font-size:clamp(30px,8vw,40px);margin:12px auto 6px}
+.lead{color:var(--mute);margin:0 auto 26px;max-width:36ch;text-wrap:balance;font-size:17px}
+
+/* buttons: sticker style with a hard shadow that sinks when pressed */
+button{font:inherit;font-weight:700;cursor:pointer;border:0;border-radius:12px;padding:14px 22px;background:var(--ink);color:var(--bg);
+  box-shadow:0 4px 0 rgba(0,0,0,.35);transition:transform .12s ease,box-shadow .12s ease,opacity .2s}
+button:not(:disabled):hover{transform:translateY(-1px)}
+button:not(:disabled):active{transform:translateY(4px);box-shadow:0 0 0 rgba(0,0,0,.35)}
+button.play{font-family:var(--display);text-transform:uppercase;letter-spacing:.04em;font-size:22px;font-weight:400;padding:18px 34px;background:var(--green);color:#fff;box-shadow:0 6px 0 var(--green-d)}
+button.play:not(:disabled):active{box-shadow:0 0 0 var(--green-d)}
+button.ghost{background:transparent;color:var(--ink);border:2px solid var(--line);box-shadow:none}
+button:disabled{opacity:.35;cursor:default;box-shadow:none}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+
+/* hero */
+.scene{display:block;width:100%;max-width:400px;margin:4px auto 0;cursor:pointer;overflow:visible}
+.scene text{font-family:var(--display)}
+.scene *{transform-box:fill-box;transform-origin:center}
+.go .arc{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.2s .1s ease-out forwards}
+.go .ball{animation:roll 1.7s cubic-bezier(.15,.7,.3,1) both}
+.go .shadow{animation:slide 1.7s cubic-bezier(.15,.7,.3,1) both}
+.go .hop{animation:hop .9s 1.7s ease-out both}
+.go .pop{animation:pop .5s 1.8s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes roll{from{transform:translateX(-300px) rotate(-900deg)}to{transform:none}}
+@keyframes slide{from{transform:translateX(-300px);opacity:.2}to{transform:none}}
+@keyframes hop{30%{transform:translateY(-38px)}55%{transform:none}72%{transform:translateY(-12px)}100%{transform:none}}
+@keyframes pop{from{transform:scale(0);opacity:0}}
+
+.chips{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:26px 0 0;padding:0}
+.chips li{font-size:14px;font-weight:700;padding:7px 13px;border-radius:999px;background:var(--card);border:1.5px solid var(--line)}
+.explain{color:var(--mute);font-size:15px;max-width:38ch;margin:16px auto 0}
+
+/* donate sticker */
+.support{position:relative;margin:34px auto 0;max-width:420px;display:flex;align-items:center;gap:14px;text-align:left;
+  background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 14px 14px 16px;transform:rotate(-1.2deg);box-shadow:5px 5px 0 var(--ink)}
+.support .heart{flex:0 0 auto;width:42px;height:42px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;font-size:20px;transform:rotate(-6deg)}
+.support strong{display:block;font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:20px;line-height:1.05;letter-spacing:.01em}
+.support p{margin:3px 0 0;font-size:14px;color:var(--mute);line-height:1.35}
+.donate{flex:0 0 auto;display:inline-block;text-decoration:none;font-weight:700;font-size:14px;padding:11px 16px;border-radius:10px;background:var(--gold);color:var(--ink);border:2px solid var(--ink);box-shadow:0 3px 0 var(--ink);white-space:nowrap}
+.donate:active{transform:translateY(3px);box-shadow:none}
+.donate-solo{display:inline-flex;margin:26px auto 0;font-size:15px;padding:12px 20px}
+
+/* game: progress as scoreboard dots */
+.steps{list-style:none;display:flex;gap:8px;justify-content:center;margin:20px 0 0;padding:0}
+.steps li{flex:0 0 auto;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:20px;background:var(--card);border:2px solid var(--line);color:var(--mute)}
+.steps li.on{border-color:var(--ink);color:var(--ink);box-shadow:0 0 0 4px var(--gold)}
+.steps li.done{background:var(--green);border-color:var(--green-d);color:#fff}
+.steps li.fresh{animation:pop2 .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop2{from{transform:scale(.4)}}
+.count{margin-top:12px;color:var(--mute);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.note{color:var(--mute);font-size:15px;margin:8px auto 0;max-width:42ch}
+
+/* answer input */
+#inwrap{margin-top:22px}
+.row{display:flex;gap:8px}
+input{flex:1;min-width:0;font:inherit;font-size:18px;font-weight:500;padding:14px 16px;border:2px solid var(--ink);border-radius:12px;background:var(--card);color:var(--ink);text-align:center;transition:box-shadow .2s ease,border-color .2s}
+input::placeholder{color:var(--mute);font-weight:400}
+input:focus{border-color:var(--green);box-shadow:0 0 0 4px rgba(27,122,61,.2)}
+.row button{padding:14px 24px}
+.msg{min-height:24px;margin:10px 0 0;font-size:15px;color:var(--mute)}
+.ask{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 0 0;padding:12px 14px;background:var(--card);border:2px dashed var(--line);border-radius:12px}
+.ask span{flex:1 1 100%}
+.ask button{padding:9px 20px}
+
+/* reveal + pitch */
+.reveal{margin-top:12px}
+.pitch{display:block;width:100%;max-width:280px;margin:0 auto}
+.pitch .field{fill:var(--pitch)}
+.pitch .lines rect,.pitch .lines circle,.pitch .lines line{fill:none;stroke:var(--mute);stroke-opacity:.5;stroke-width:1.5}
+.trail{stroke:var(--green);stroke-width:3;stroke-linecap:round;stroke-dasharray:4 5}
+.ans{font-family:var(--display);text-transform:uppercase;font-size:30px;line-height:1.1;margin:10px 0 2px;letter-spacing:.01em;overflow-wrap:anywhere}
+.tierl{color:var(--mute);font-size:14px;font-weight:500}
+.rpts{font-family:var(--display);font-size:64px;line-height:1;margin:4px 0 16px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.rpts.hi{color:var(--green)}
+.rpts.lo{color:var(--red)}
+.cardy{display:inline-block;width:14px;height:19px;border-radius:2px;background:var(--gold);vertical-align:middle;transform:rotate(-6deg);margin-right:8px}
+#cont{margin-top:4px}
+
+/* end: scoreboard */
+#end .board{display:inline-block;margin-top:22px;background:#0b0d0c;color:#ffc20e;font-family:var(--display);font-size:86px;line-height:1;padding:12px 26px 10px;border-radius:14px;
+  box-shadow:inset 0 0 0 3px #222,0 6px 0 #000;letter-spacing:.02em;font-variant-numeric:tabular-nums;text-shadow:0 0 14px rgba(255,194,14,.45)}
+#end .board small{display:block;font-size:14px;color:#8a8f8c;letter-spacing:.14em;margin-top:6px;text-shadow:none}
+#end .tierl{margin-top:12px;font-size:16px;color:var(--ink);font-weight:700}
+#end .pct{font-size:14px;color:var(--mute);margin:4px 0 20px}
+.cd{color:var(--mute);font-size:14px;margin:14px 0 0}
+#end ul{list-style:none;margin:0;padding:0;text-align:left}
+#end li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1.5px solid var(--line)}
+#end li b{font-family:var(--display);font-weight:400;font-size:22px;font-variant-numeric:tabular-nums}
+#end ul.recap{margin-top:24px;background:var(--card);border:2px solid var(--ink);border-radius:14px;padding:4px 16px;box-shadow:4px 4px 0 var(--ink)}
+h2{font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:24px;margin:34px 0 4px;letter-spacing:.01em}
+details{text-align:left;border-bottom:1.5px solid var(--line);padding:12px 0}
+summary{cursor:pointer;font-weight:700}
+details ul{margin-top:6px}
+details li{padding:8px 0}
+
+/* headline sticker */
+.sticker{display:inline-block;margin:0 0 20px;background:var(--gold);color:var(--ink);font-family:var(--display);text-transform:uppercase;font-size:clamp(22px,6vw,30px);line-height:1;letter-spacing:.01em;padding:8px 18px 6px;border:2.5px solid var(--ink);border-radius:8px;transform:rotate(-2.5deg);box-shadow:4px 4px 0 var(--ink)}
+/* red card marker in the reveal */
+.cardy.red{background:var(--red)}
+/* referee cards flying in */
+.ref{position:fixed;left:50%;top:0;z-index:60;text-align:center;pointer-events:none;transform:translate(-50%,-260px) rotate(-25deg);animation:refIn 1.1s cubic-bezier(.2,.9,.3,1.15) forwards}
+.ref i{display:block;width:96px;height:132px;margin:0 auto;border-radius:10px;border:3px solid var(--ink);background:var(--gold);box-shadow:6px 8px 0 rgba(0,0,0,.35)}
+.ref.red i{background:var(--red)}
+.ref b{display:inline-block;margin-top:12px;font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:20px;letter-spacing:.04em;background:#0b0d0c;color:#fff;padding:6px 14px;border-radius:8px;transform:rotate(3deg)}
+.ref.out{animation:refOut .4s ease-in forwards}
+@keyframes refIn{0%{transform:translate(-50%,-260px) rotate(-25deg)}55%{transform:translate(-50%,28vh) rotate(-8deg)}70%{transform:translate(-50%,24vh) rotate(-4deg)}100%{transform:translate(-50%,26vh) rotate(-6deg)}}
+@keyframes refOut{from{transform:translate(-50%,26vh) rotate(-6deg);opacity:1}to{transform:translate(-50%,30vh) rotate(-6deg) scale(.5);opacity:0}}
+/* FULL TIME banner */
+.ft{display:inline-block;font-family:var(--display);text-transform:uppercase;font-size:clamp(34px,10vw,48px);line-height:1;padding:8px 22px 6px;background:var(--gold);color:var(--ink);border:3px solid var(--ink);border-radius:8px;box-shadow:6px 6px 0 var(--ink);margin-top:18px}
+@media (prefers-reduced-motion:no-preference){
+  .ft{animation:ftin 2.4s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes ftin{0%{opacity:0;transform:translateX(-140%) skew(-10deg)}16%{opacity:1;transform:skew(-10deg)}72%{opacity:1;transform:skew(-10deg)}100%{opacity:0;transform:translateX(140%) skew(-10deg)}}
+  input.shake{animation:shake .4s}
+}
+/* question timer */
+.timer-wrap{margin:0 0 16px}
+.tnum{display:inline-block;font-family:var(--display);font-size:34px;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.tbar{position:relative;height:10px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}
+#tbar{position:absolute;inset:0;background:var(--green);transform-origin:left center}
+.timer-wrap.low .tnum{color:var(--red)}
+.timer-wrap.low #tbar{background:var(--red)}
+@media (prefers-reduced-motion:no-preference){
+  .timer-wrap.low .tnum{animation:beat .5s ease-in-out infinite alternate}
+  @keyframes beat{to{transform:scale(1.15)}}
+}
+
+/* confetti */
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.confetti i{position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;opacity:0;animation:fall 2.6s cubic-bezier(.2,.6,.4,1) forwards}
+@keyframes fall{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--x),105vh) rotate(var(--r))}}
+
+/* motion layer (all guarded by reduced-motion) */
+@media (prefers-reduced-motion:no-preference){
+  .rise{animation:rise .6s cubic-bezier(.2,.8,.2,1) var(--d,0s) backwards}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  button.play{animation:breathe 2.8s ease-in-out infinite}
+  @keyframes breathe{0%,100%{box-shadow:0 6px 0 var(--green-d),0 0 0 0 rgba(60,207,116,.4)}50%{box-shadow:0 6px 0 var(--green-d),0 0 0 14px rgba(60,207,116,0)}}
+  .reveal.in{animation:in .4s ease-out}
+  @keyframes in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  .reveal.in .ans,.reveal.in .tierl{animation:rise .5s cubic-bezier(.2,.8,.2,1) backwards}
+  .reveal.in .tierl{animation-delay:.12s}
+  .reveal.in .pitch .lines{animation:fade .9s ease-out backwards}
+  @keyframes fade{from{opacity:0}}
+  .rpts.bump{animation:bump .5s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes bump{from{transform:scale(1.3)}to{transform:none}}
+  .ring{transform-box:fill-box;transform-origin:center;opacity:0}
+  .ring.go{animation:ring .9s ease-out}
+  @keyframes ring{from{opacity:.9;transform:scale(.6)}to{opacity:0;transform:scale(4.5)}}
+  .pitch.shake{animation:shake .4s}
+  @keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(2px)}}
+  .prog-in{animation:in .4s ease-out}
+  .cardy.drop{animation:drop .4s ease-out}
+  @keyframes drop{from{opacity:0;transform:translateY(-22px) rotate(-40deg)}}
+  #end.in .board{animation:bump .7s cubic-bezier(.3,1.6,.5,1) backwards}
+  #end.in li{animation:rise .45s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i)*80ms + .15s)}
+  .support{animation:rise .6s cubic-bezier(.2,.8,.2,1) .5s backwards}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="rise">
+    <a class="logo" href="#" aria-label="ballknowledge home">ball<span>knowledge</span></a>
+    <div class="top-r">
+      <div class="day" id="date"></div>
+      <button class="pill" id="snd" aria-pressed="true">Sound on</button>
+    </div>
+  </header>
+
+  <section id="home">
+    <svg class="scene rise" id="scene" viewBox="0 0 400 190" aria-hidden="true" style="--d:.05s">
+      <line x1="0" y1="170" x2="400" y2="170" stroke="var(--line)" stroke-width="3"/>
+      <path class="arc" d="M120 170 A80 80 0 0 1 280 170" pathLength="1" fill="none" stroke="var(--ink)" stroke-width="3" stroke-dasharray="1" stroke-opacity=".35"/>
+      <ellipse class="shadow" cx="200" cy="172" rx="24" ry="4" fill="var(--ink)" opacity=".15"/>
+      <g class="hop"><g class="ball">
+        <circle cx="200" cy="144" r="26" fill="var(--card)" stroke="var(--ink)" stroke-width="3"/>
+        <polygon points="200,135 208.6,141.2 205.3,151.3 194.7,151.3 191.4,141.2" fill="var(--ink)"/>
+        <g stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round">
+          <line x1="200" y1="135" x2="200" y2="119"/><line x1="208.6" y1="141.2" x2="223" y2="136"/>
+          <line x1="205.3" y1="151.3" x2="214" y2="164"/><line x1="194.7" y1="151.3" x2="186" y2="164"/>
+          <line x1="191.4" y1="141.2" x2="177" y2="136"/></g>
+      </g></g>
+      <g class="pop">
+        <rect x="158" y="14" width="84" height="46" rx="12" fill="var(--gold)" stroke="var(--ink)" stroke-width="2.5"/>
+        <polygon points="192,58 208,58 200,70" fill="var(--gold)" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/>
+        <rect x="193" y="56" width="14" height="4" fill="var(--gold)"/>
+        <text id="pop" x="200" y="46" text-anchor="middle" font-size="30" fill="var(--ink)">100</text>
+      </g>
+    </svg>
+
+    <h1 class="rise" style="--d:.12s">One football question a day.</h1>
+    <p class="sticker rise" style="--d:.2s">The obscure answer wins.</p>
+    <p class="lead rise" style="--d:.22s">Name a player, a club, a moment. The more people would think of it, the fewer points it’s worth.</p>
+    <button class="play rise" style="--d:.3s" id="start">Play today’s game</button>
+
+    <ul class="chips rise" style="--d:.4s">
+      <li>5 questions</li><li>1 guess each</li><li>Max 500 pts</li>
+    </ul>
+    <p class="explain rise" style="--d:.46s">The obvious answer barely moves you. The obscure one takes you to the far end.</p>
+
+    <aside class="support" aria-label="Support ballknowledge">
+      <div class="heart" aria-hidden="true">♥</div>
+      <div>
+        <strong>Keep it free</strong>
+        <p>ballknowledge is free to play. Want to help keep it going?</p>
+      </div>
+      <a class="donate" href="https://whydonate.com/nl/donate/ballknowledgeio" target="_blank" rel="noopener noreferrer">Donate</a>
+    </aside>
+  </section>
+
+  <section id="game" hidden>
+    <ol class="steps" id="prog"></ol>
+    <div class="count" id="count"></div>
+    <h1 id="q"></h1>
+    <p class="note" id="note"></p>
+
+    <div id="inwrap">
+      <div id="timer" class="timer-wrap" hidden>
+        <div class="tnum" id="tnum">30</div>
+        <div class="tbar"><div id="tbar"></div></div>
+      </div>
+      <div class="row">
+        <input id="in" type="text" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Type a name" aria-label="Your answer">
+        <button id="go">Guess</button>
+      </div>
+      <div id="ask" class="ask" hidden></div>
+      <p class="msg" id="msg" role="status"></p>
+    </div>
+
+    <div id="reveal" class="reveal" hidden>
+      <svg id="pitch" class="pitch" viewBox="0 0 300 440" aria-hidden="true">
+        <rect class="field" x="20" y="20" width="260" height="400" rx="4"/>
+        <g class="lines">
+          <rect x="20" y="20" width="260" height="400" rx="4"/>
+          <rect x="75" y="20" width="150" height="66"/>
+          <rect x="105" y="20" width="90" height="26"/>
+          <rect x="75" y="354" width="150" height="66"/>
+          <rect x="105" y="394" width="90" height="26"/>
+          <line x1="20" y1="220" x2="280" y2="220"/>
+          <circle cx="150" cy="220" r="44"/>
+        </g>
+        <circle cx="150" cy="70" r="3" fill="var(--mute)"/>
+        <line class="trail" id="trail" x1="150" y1="70" x2="150" y2="70"/>
+        <circle id="ring" class="ring" cx="150" cy="70" r="7" fill="none" stroke="var(--gold)" stroke-width="3"/>
+        <g id="ball" transform="translate(150 70)">
+          <circle r="12" fill="var(--card)" stroke="var(--ink)" stroke-width="2.5"/>
+          <polygon points="0,-5.5 5.2,-1.7 3.2,4.4 -3.2,4.4 -5.2,-1.7" fill="var(--ink)"/>
+        </g>
+      </svg>
+      <div class="ans" id="rn"></div>
+      <div class="tierl" id="rt"></div>
+      <div class="rpts" id="rp">0</div>
+      <button id="cont" class="play" disabled>Continue</button>
+    </div>
+
+    <div id="end" hidden></div>
+  </section>
+</div>
+
+<script>
+/* ---------- QUESTIONS ----------
+   Add questions here. p = points (0-100), a = extra spellings.
+   Every question should have one 100-point answer (checked in the console).
+   All points are first estimates: review them yourself. */
+const QUESTIONS = [
+  { q:"Name a player in Sunderland’s current squad.", note:"First-team squad only.",
+    answers:[
+      {n:"Brian Brobbey",p:5,a:["brobbey","brobbie"]},{n:"Granit Xhaka",p:8,a:["xhaka"]},
+      {n:"Robin Roefs",p:15,a:["roefs"]},{n:"Habib Diarra",p:22,a:["diarra"]},
+      {n:"Chemsdine Talbi",p:30,a:["talbi"]},{n:"Nordi Mukiele",p:30,a:["mukiele"]},
+      {n:"Noah Sadiki",p:38,a:["sadiki"]},{n:"Enzo Le Fée",p:45,a:["le fee","lefee","enzo"]},
+      {n:"Dan Ballard",p:55,a:["ballard"]},{n:"Trai Hume",p:55,a:["hume"]},
+      {n:"Reinildo",p:60,a:["reinildo mandava"]},{n:"Omar Alderete",p:65,a:["alderete"]},
+      {n:"Wilson Isidor",p:72,a:["isidor"]},{n:"Eliezer Mayenda",p:78,a:["mayenda"]},
+      {n:"Luke O’Nien",p:80,a:["onien","o nien"]},{n:"Dennis Cirkin",p:85,a:["cirkin"]},
+      {n:"Romaine Mundle",p:88,a:["mundle"]},{n:"Chris Rigg",p:90,a:["rigg"]},
+      {n:"Jenson Seelt",p:92,a:["seelt"]},{n:"Harrison Jones",p:100,a:["jones"]}]},
+  { q:"Name a Dutch player who has played for Liverpool.", note:"At least one official match.",
+    answers:[
+      {n:"Virgil van Dijk",p:3,a:["van dijk","vvd"]},{n:"Ryan Gravenberch",p:8,a:["gravenberch"]},
+      {n:"Cody Gakpo",p:12,a:["gakpo"]},{n:"Dirk Kuyt",p:15,a:["kuyt"]},
+      {n:"Georginio Wijnaldum",p:20,a:["wijnaldum","gini"]},{n:"Jeremie Frimpong",p:45,a:["frimpong","jeremy frimpong"]},
+      {n:"Sepp van den Berg",p:80,a:["van den berg"]},{n:"Ki-Jana Hoever",p:85,a:["hoever","kijana hoever"]},
+      {n:"Bobby Adekanye",p:100,a:["adekanye"]}]},
+  { q:"Name a player from Leicester City’s 2015/16 title-winning squad.", note:"At least one league appearance that season.",
+    answers:[
+      {n:"Jamie Vardy",p:3,a:["vardy"]},{n:"Riyad Mahrez",p:5,a:["mahrez"]},
+      {n:"N’Golo Kanté",p:6,a:["kante","ngolo kante"]},{n:"Kasper Schmeichel",p:10,a:["schmeichel"]},
+      {n:"Danny Drinkwater",p:18,a:["drinkwater"]},{n:"Wes Morgan",p:20,a:["morgan"]},
+      {n:"Robert Huth",p:25,a:["huth"]},{n:"Christian Fuchs",p:30,a:["fuchs"]},
+      {n:"Shinji Okazaki",p:35,a:["okazaki"]},{n:"Marc Albrighton",p:40,a:["albrighton"]},
+      {n:"Danny Simpson",p:45,a:["simpson"]},{n:"Jeffrey Schlupp",p:50,a:["schlupp","jeff schlupp"]},
+      {n:"Marcin Wasilewski",p:55,a:["wasilewski"]},{n:"Andy King",p:60,a:["king"]},
+      {n:"Leonardo Ulloa",p:70,a:["ulloa"]},{n:"Daniel Amartey",p:75,a:["amartey"]},
+      {n:"Andrej Kramarić",p:78,a:["kramaric"]},{n:"Demarai Gray",p:80,a:["gray","grey"]},
+      {n:"Gökhan Inler",p:85,a:["inler"]}]},
+  { q:"Name a club Zlatan Ibrahimović played for.", note:"Senior career, any spell.",
+    answers:[
+      {n:"AC Milan",p:5,a:["milan"]},{n:"FC Barcelona",p:8,a:["barcelona","barca"]},
+      {n:"Paris Saint-Germain",p:8,a:["psg","paris","paris saint germain"]},{n:"Juventus",p:10,a:["juve"]},
+      {n:"Manchester United",p:10,a:["man united","man utd","united","manchester utd"]},{n:"Inter",p:12,a:["inter milan","internazionale"]},
+      {n:"Ajax",p:18,a:["ajax amsterdam"]},{n:"LA Galaxy",p:30,a:["galaxy","los angeles galaxy"]},
+      {n:"Malmö FF",p:70,a:["malmo","malmo ff"]}]},
+  { q:"Name a player who has scored in a World Cup final.", note:"Goals in normal or extra time. Penalty shootouts don’t count.",
+    answers:[
+      {n:"Lionel Messi",p:4,a:["messi"]},{n:"Kylian Mbappé",p:4,a:["mbappe"]},
+      {n:"Zinedine Zidane",p:8,a:["zidane","zizou"]},{n:"Ronaldo Nazário",p:10,a:["ronaldo","r9"]},
+      {n:"Pelé",p:12,a:["pele"]},{n:"Ángel Di María",p:15,a:["di maria","dimaria"]},
+      {n:"Mario Götze",p:18,a:["gotze","goetze"]},{n:"Andrés Iniesta",p:20,a:["iniesta"]},
+      {n:"Antoine Griezmann",p:28,a:["griezmann"]},{n:"Paul Pogba",p:30,a:["pogba"]},
+      {n:"Ivan Perišić",p:40,a:["perisic"]},{n:"Marco Materazzi",p:45,a:["materazzi"]},
+      {n:"Emmanuel Petit",p:50,a:["petit"]},{n:"Geoff Hurst",p:55,a:["hurst"]},
+      {n:"Paolo Rossi",p:60,a:["rossi"]},{n:"Marco Tardelli",p:70,a:["tardelli"]},
+      {n:"Alessandro Altobelli",p:70,a:["altobelli"]},
+      {n:"Paul Breitner",p:80,a:["breitner"]},{n:"Andreas Brehme",p:85,a:["brehme"]},
+      {n:"Karl-Heinz Rummenigge",p:85,a:["rummenigge"]},{n:"Jorge Burruchaga",p:92,a:["burruchaga"]},
+      {n:"Max Morlock",p:100,a:["morlock"]}]}
+];
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const PER = 5, START = 70, END = 380;               // pitch: penalty spot (0 pts) to far end (100 pts)
+const yOf = p => START + (END - START) * p / 100;
+const norm = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=[...Array(n+1).keys()];for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const tierOf = p => p>=90?"Ultra niche":p>=61?"Deep cut":p>=31?"Uncommon":p>=11?"Known to fans":"Everyone’s first thought";
+const tierEnd = t => t>=400?"Deep diver":t>=300?"Serious knowledge":t>=180?"Solid effort":"Mostly first thoughts";
+// SIMULATED percentile until there are real players: higher score = smaller percentage, with some spread
+const pctOf = t => Math.max(1, Math.round(70*Math.pow((500-t)/500,2) + 2 + ((dayNo*7+t)%5)));
+
+const start = new Date(2026,9,29), today = new Date(); today.setHours(0,0,0,0);
+const dayNo = Math.round((today-start)/864e5);
+const DECK = Array.from({length:PER}, (_,i) => QUESTIONS[(((dayNo+i)%QUESTIONS.length)+QUESTIONS.length)%QUESTIONS.length]);
+DECK.forEach(Q => { if(Math.max(...Q.answers.map(a=>a.p)) < 100) console.warn("No 100-point answer in:", Q.q); });
+const KEY = "bk2:" + today.toISOString().slice(0,10);
+let S, pending = null;
+
+$("date").textContent = today.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+function load(){try{const v=localStorage.getItem(KEY);if(v)return JSON.parse(v)}catch(e){}return {r:[],shown:false}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------- feel: sound, haptics, confetti ---------- */
+let sndOn = (()=>{try{return localStorage.getItem("bk:snd")!=="0"}catch(e){return true}})();
+let ac = null;
+function paintSnd(){const b=$("snd");b.textContent=sndOn?"Sound on":"Sound off";b.setAttribute("aria-pressed",String(sndOn))}
+$("snd").onclick=()=>{sndOn=!sndOn;try{localStorage.setItem("bk:snd",sndOn?"1":"0")}catch(e){}paintSnd()};
+paintSnd();
+function blip(f=660,d=.09,type="triangle",at=0){
+  if(!sndOn)return;
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const t=ac.currentTime+at, o=ac.createOscillator(), g=ac.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t);
+    if(type==="sawtooth") o.frequency.exponentialRampToValueAtTime(f*.6,t+d);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.18,t+.012); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t+d+.03);
+  }catch(e){}
+}
+function buzz(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+function confetti(n){
+  if(reduce)return;
+  const box=document.createElement("div"); box.className="confetti"; box.setAttribute("aria-hidden","true");
+  const cols=["#ffc20e","#3ccf74","#1b7a3d","#e4572e","#ffffff"];
+  for(let i=0;i<n;i++){
+    const p=document.createElement("i");
+    p.style.left=(Math.random()*100)+"%";
+    p.style.background=cols[i%cols.length];
+    p.style.animationDelay=(Math.random()*.35)+"s";
+    p.style.setProperty("--x",(Math.random()*180-90)+"px");
+    p.style.setProperty("--r",(Math.random()*760-380)+"deg");
+    box.appendChild(p);
+  }
+  document.body.appendChild(box);
+  setTimeout(()=>box.remove(),3200);
+}
+function celebrate(p){
+  if(p>=90){confetti(90);blip(523,.12);blip(784,.18,"triangle",.1)}
+  else if(p>=70){confetti(36);blip(660,.12)}
+}
+
+/* ---------- answering ---------- */
+function terms(a){
+  const t=new Set([norm(a.n)]);
+  const parts=norm(a.n).split(" ");
+  if(parts.length>1)t.add(parts[parts.length-1]);
+  (a.a||[]).forEach(x=>t.add(norm(x)));
+  return [...t];
+}
+/* exact -> accepted at once; close -> "Did you mean?" */
+function find(input,Q){
+  const x=norm(input); if(!x)return null;
+  for(const a of Q.answers) if(terms(a).includes(x)) return {a,exact:true};
+  let best=null,bd=9;
+  for(const a of Q.answers) for(const t of terms(a)){
+    const tol=t.length>=9?2:t.length>=5?1:0;
+    let d=9;
+    if(tol&&Math.abs(t.length-x.length)<=tol){const l=lev(t,x);if(l<=tol)d=l}
+    if(x.length>=4&&t.startsWith(x))d=Math.min(d,1);
+    if(d<bd){bd=d;best=a}
+  }
+  return best?{a:best,exact:false}:null;
+}
+function countUp(el,to,ms){
+  if(reduce||!ms){el.textContent=to;return}
+  const t0=performance.now();
+  (function f(t){const k=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-k,3);el.textContent=Math.round(to*e);if(k<1)requestAnimationFrame(f)})(t0);
+}
+function tick(){
+  const el=$("cd"); if(!el)return;
+  const s=Math.max(0,Math.floor((new Date(today.getTime()+864e5)-new Date())/1000)),p=n=>String(n).padStart(2,"0");
+  el.textContent=p(Math.floor(s/3600))+":"+p(Math.floor(s%3600/60))+":"+p(s%60);
+}
+setInterval(tick,1000);
+
+/* ---------- the dive: ball sinks down the pitch, ease-out ---------- */
+function place(y){
+  const rot=(y-START)/11*57.2958;                       // roll without slipping: rotation follows distance
+  $("ball").setAttribute("transform",`translate(150 ${y}) rotate(${rot.toFixed(1)})`);
+  $("trail").setAttribute("y2",y);
+}
+const PRE=650, BOUNCE=520;                              // anticipation before the roll, bounce after the landing
+const easeInOut=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+function dive(y1,ms){
+  return new Promise(res=>{
+    if(!ms){place(y1);return res()}
+    const t0=performance.now(), dist=y1-START;
+    let lastTick=0, landed=false;
+    (function f(t){
+      const el=t-t0;
+      let y;
+      if(el<PRE){
+        // anticipation: the ball rocks back a touch, building the tension
+        y=START-6*Math.sin(el/PRE*Math.PI);
+      } else {
+        const r=el-PRE, k=Math.min(1,r/ms);
+        if(r<ms){
+          // roll: slow start, quick middle, long drag at the end
+          y=START+dist*easeInOut(k);
+          // a ticking clock that slows down as the ball approaches its spot
+          if(el-lastTick>90+280*k){lastTick=el;blip(760+k*180,.035)}
+        } else {
+          // landing: two decaying bounces
+          const b=Math.min(1,(r-ms)/BOUNCE);
+          y=y1-12*(1-b)*Math.abs(Math.sin(b*Math.PI*2));
+          if(!landed){landed=true;blip(330,.09,"sine")}
+        }
+      }
+      place(y);
+      if(el<PRE+ms+BOUNCE) requestAnimationFrame(f);
+      else {place(y1);res()}
+    })(t0);
+  });
+}
+
+function replay(el,c){el.classList.remove(c);void el.offsetWidth;el.classList.add(c)}
+
+/* ---------- screens ---------- */
+function renderSteps(cur,anim){
+  $("prog").innerHTML=DECK.map((_,k)=>{
+    const done=k<S.r.length;
+    const cls=done?"done":k===cur?"on":"";
+    const fresh=anim&&k===S.r.length-1?" fresh":"";
+    return `<li class="${cls}${fresh}">${done?S.r[k].p:k+1}</li>`;
+  }).join("");
+}
+function showReveal(res,anim){
+  const miss=!!res.miss, ms=anim&&!miss?(reduce?0:2300+res.p*16):0;
+  const cont=$("cont"), rp=$("rp"), rv=$("reveal");
+  $("rn").innerHTML = miss ? `<span class="cardy${res.red?" red":""}${anim?" drop":""}"></span>${esc(res.raw)}` : esc(res.n);
+  $("rt").textContent = miss ? (res.timeout?"Time’s up. Scores 0.":res.red?"Red card. Scores 0.":"Not on the list. Scores 0.") : tierOf(res.p);
+  rp.className="rpts"; rp.textContent = ms ? 0 : res.p;
+  cont.disabled=true;
+  rv.classList.toggle("in", !!anim);
+  countUp(rp, res.p, ms);
+  if(anim&&miss){replay($("pitch"),"shake");buzz([60,40,60]);blip(190,.22,"sawtooth")}
+  dive(miss?START:yOf(res.p), ms).then(()=>{
+    cont.disabled=false;
+    rp.classList.toggle("hi", !miss && res.p>=70);
+    rp.classList.toggle("lo", miss);
+    if(anim&&!miss){
+      $("ring").setAttribute("cy",yOf(res.p));replay($("ring"),"go");replay(rp,"bump");
+      celebrate(res.p);
+    }
+    if(anim)cont.focus();
+  });
+}
+function renderEnd(){
+  const tot=S.r.reduce((s,x)=>s+x.p,0), pct=pctOf(tot);
+  const sq=S.r.map(x=>x.miss?"🟨":x.p>=60?"🟩":"⬜").join("");
+  const e=$("end");
+  e.classList.remove("in");void e.offsetWidth;e.classList.add("in");
+  e.innerHTML=`
+    <div class="ft" id="ft">Full time</div>
+    <div class="board"><span id="tot">0</span><small>OUT OF 500</small></div>
+    <div class="tierl">${tierEnd(tot)}</div>
+    <div class="pct">Top ${pct}% today</div>
+    <button class="play" id="share">Share result</button>
+    <p class="cd">Next set in <span id="cd"></span></p>
+    <ul class="recap">${S.r.map((x,i)=>`<li style="--i:${i}"><span>${i+1}. ${esc(x.miss?x.raw:x.n)}</span><b>${x.p}</b></li>`).join("")}</ul>
+    <h2>All answers</h2>
+    ${DECK.map((Q,i)=>`<details><summary>${esc(Q.q)}</summary><ul>${[...Q.answers].sort((a,b)=>b.p-a.p).map(a=>`<li><span>${esc(a.n)}${S.r[i]&&S.r[i].n===a.n?" ✓":""}</span><b>${a.p}</b></li>`).join("")}</ul></details>`).join("")}
+    <a class="donate donate-solo" href="https://whydonate.com/nl/donate/ballknowledgeio" target="_blank" rel="noopener noreferrer">♥ Support ballknowledge</a>`;
+  whistle();
+  setTimeout(()=>tallyUp($("tot"),tot,2600,()=>{if(tot>=350)confetti(60)}),1500);
+  tick();
+  $("share").onclick=async()=>{
+    const t=`ballknowledge ${today.toLocaleDateString("en-GB")}\n${tot} / 500 · Top ${pct}%\n${sq}`;
+    try{await navigator.clipboard.writeText(t);$("share").textContent="Copied"}catch(err){$("share").textContent="Couldn’t copy here"}
+  };
+}
+function renderGame(anim){
+  stopTimer();
+  const end=!S.shown && S.r.length>=PER;
+  const cur=S.shown?S.r.length-1:S.r.length;
+  $("end").hidden=!end;
+  ["prog","count","q","note"].forEach(id=>$(id).hidden=end);
+  $("inwrap").hidden=end||S.shown;
+  $("reveal").hidden=end||!S.shown;
+  if(end){renderEnd();return}
+  const Q=DECK[cur];
+  $("q").textContent=Q.q;
+  replay($("q"),"rise");
+  $("note").textContent=Q.note||"";
+  $("count").textContent="Question "+(cur+1)+" of "+PER;
+  renderSteps(cur,anim);
+  if(S.shown) showReveal(S.r[cur],anim);
+  else {$("in").disabled=false; $("msg").textContent=S.w?"Yellow card. One wrong answer left.":""; if(!reduce&&!matchMedia("(pointer:coarse)").matches) $("in").focus(); startTimer()}
+}
+
+/* ---------- referee: yellow card, then red card ---------- */
+// First wrong answer on a question: yellow card, one more try.
+// Second wrong answer: red card, the question scores 0 and the game moves on.
+function whistle(){blip(1400,.12,"square");blip(1400,.22,"square",.16)}
+function refCard(kind,done){
+  whistle(); buzz(kind==="red"?[120,60,120]:80);
+  if(reduce){done&&done();return}
+  const el=document.createElement("div");
+  el.className="ref "+kind; el.setAttribute("aria-hidden","true");
+  el.innerHTML=`<i></i><b>${kind==="red"?"Red card":"Yellow card"}</b>`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.classList.add("out"),1150);
+  setTimeout(()=>{el.remove();done&&done()},1550);
+}
+function wrongGuess(raw){
+  clearAsk();
+  if(!S.w){
+    S.w=1; save();
+    $("msg").textContent="Not on the list. Yellow card, one more try.";
+    $("in").select();
+    replay($("in"),"shake");
+    refCard("yellow");
+    return;
+  }
+  $("in").disabled=true;
+  refCard("red",()=>commit({raw,p:0,miss:true,red:true}));
+}
+
+/* ---------- score tally: ticks up, a blip every 25 points ---------- */
+function tallyUp(el,to,ms,done){
+  if(reduce||!to){el.textContent=to;done&&done();return}
+  const t0=performance.now(); let last=-1;
+  (function f(t){
+    const k=Math.min(1,(t-t0)/ms), e=1-Math.pow(1-k,3), v=Math.round(to*e);
+    if(v!==last){
+      el.textContent=v;
+      if(Math.floor(v/25)!==Math.floor(last/25)) blip(700+k*500,.04);
+      last=v;
+    }
+    if(k<1) requestAnimationFrame(f); else {el.textContent=to; done&&done()}
+  })(t0);
+}
+
+/* ---------- 30-second timer per question ---------- */
+// The deadline is stored in S.dl, so a reload doesn't reset the clock.
+let tTimer=null;
+function stopTimer(){clearTimeout(tTimer);tTimer=null}
+function startTimer(){
+  stopTimer();
+  const box=$("timer");
+  if(S.shown||S.r.length>=PER){box.hidden=true;return}
+  box.hidden=false;
+  if(!S.dl){S.dl=Date.now()+30000;save()}
+  let last=null;
+  const check=()=>{
+    const left=Math.max(0,S.dl-Date.now()), sec=Math.ceil(left/1000);
+    $("tbar").style.transform=`scaleX(${left/30000})`;
+    $("tnum").textContent=sec;
+    box.classList.toggle("low",sec<=10);
+    if(sec!==last){last=sec;if(sec<=5&&sec>0)blip(sec<=3?1000:820,.07)}
+    if(left<=0){tTimer=null;timeUp();return}
+    tTimer=setTimeout(check,200);
+  };
+  check();
+}
+function timeUp(){
+  if(S.shown)return;
+  clearAsk();
+  commit({raw:"No answer",p:0,miss:true,timeout:true});
+}
+
+/* ---------- one guess per question ---------- */
+function clearAsk(){pending=null;$("ask").hidden=true}
+function commit(res){S.r.push(res);S.shown=true;delete S.dl;delete S.w;stopTimer();save();$("in").value="";clearAsk();renderGame(true)}
+function guess(){
+  const raw=$("in").value.trim(); if(!raw||S.shown)return;
+  clearAsk(); $("msg").textContent="";
+  const Q=DECK[S.r.length];
+  const r=find(raw,Q);
+  if(r&&r.exact)return commit({n:r.a.n,p:r.a.p});
+  if(r){
+    pending=r.a;
+    const ask=$("ask");
+    ask.innerHTML=`<span>Did you mean <b>${esc(r.a.n)}</b>?</span><button id="yes">Yes</button><button class="ghost" id="no">No</button>`;
+    ask.hidden=false;
+    $("yes").onclick=()=>commit({n:pending.n,p:pending.p});
+    $("no").onclick=()=>{clearAsk();$("in").focus();$("in").select()};
+    $("yes").focus();
+    return;
+  }
+  wrongGuess(raw);
+}
+$("go").onclick=guess;
+$("in").addEventListener("keydown",e=>{if(e.key==="Enter")guess()});
+$("in").addEventListener("input",clearAsk);
+$("cont").onclick=()=>{S.shown=false;save();renderGame(false)};
+
+/* ---------- hero animation ---------- */
+function playScene(){
+  const s=$("scene");
+  s.classList.remove("go");
+  if(reduce)return;
+  void s.getBoundingClientRect();
+  s.classList.add("go");
+  $("pop").textContent="0";
+  setTimeout(()=>countUp($("pop"),100,700),1900);
+}
+$("scene").onclick=playScene;
+
+/* ---------- routing: #play = game, otherwise home ---------- */
+function route(){
+  const play=location.hash==="#play";
+  $("home").hidden=play; $("game").hidden=!play;
+  S=load();
+  if(play) renderGame(false);
+  else{
+    $("start").textContent = (S.r.length>=PER&&!S.shown)?"See today’s result":S.r.length?"Continue today’s game":"Play today’s game";
+    playScene();
+  }
+  window.scrollTo(0,0);
+}
+$("start").onclick=()=>{location.hash="play"};
+addEventListener("hashchange",route);
+route();
+</script>
+</body>
+</html>
